@@ -127,6 +127,11 @@ class PDF(object):
         self.write_xref(fd)
         self.write_trailer(fd)
 
+    def make_ref(self, obj):
+        ref_obj = Ref(obj, len(self.xref) + 1)
+        self.xref.append(ref_obj)
+        return ref_obj
+
     def write_header(self, fd):
         "Write PDF header"
         # write PDF header with version
@@ -149,7 +154,7 @@ class PDF(object):
                 fd.write(k.encode('utf-8'))
                 fd.write(b' ')
                 self.write_obj(fd, v)
-            fd.write(b' >> ')
+            fd.write(b' >> \n')
         elif isinstance(obj, int):
             fd.write(str(obj).encode('utf-8'))
         elif obj is True:
@@ -166,6 +171,11 @@ class PDF(object):
             fd.write(b'/')
             fd.write(obj.value.encode('utf-8'))
             fd.write(b' ')
+        elif isinstance(obj, Ref):
+            obj.position = fd.tell()
+            fd.write(b'%d %d obj\n' % (obj.ref_id, obj.generation))
+            self.write_obj(fd, obj.obj)
+            fd.write(b'\nendobj\n')
         # 7.3.6 Array objects
         elif isinstance(obj, list):
             fd.write(b'[')
@@ -177,7 +187,8 @@ class PDF(object):
 
     def write_objects(self, fd):
         # XXX FIXME this still needs to be implemented
-        pass
+        root_ref = self.make_ref(self.root)
+        self.write_obj(fd, root_ref)
 
     def write_xref(self, fd):
         "Write the PDF object index"
