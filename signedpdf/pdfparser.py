@@ -77,8 +77,12 @@ class PDFDict(object):
         b.append(b'>>')
         return b''.join(b)
 
+    def __getitem__(self, key):
+        return self.values[key]
+
     def __setitem__(self, key, value):
         self.values[key] = value
+
 
 class Name(object):
     def __init__(self, val):
@@ -96,20 +100,29 @@ class Root(PDFDict):
 
 class Pages(PDFDict):
     # Chapter 7.7.3 Page tree
-    def __init__(self, **kwargs):
+    def __init__(self, pdf, **kwargs):
         super(Pages, self).__init__()
         # Mandatory keys are:
         # - "Type", string "Pages"
         # - "Parent", dict
         # - "Kids"
         # - "Count"
-        self['Type'] = 'Pages'
+        self.pdf = pdf
+        self['Type'] = Name('Pages')
         self['Kids'] = []
         self['Count'] = 0
 
     def add_page(self, page):
-        self['Kids'].append(page)
+        page_ref = self.pdf.make_ref(page)
+        self['Kids'].append(IndirectRef(page_ref))
         self['Count'] = len(self['Kids'])
+
+
+class Page(PDFDict):
+    def __init__(self):
+        super(Page, self).__init__()
+        self['Type'] = Name('Page')
+
 
 
 class PDF(object):
@@ -119,6 +132,7 @@ class PDF(object):
         self.xref = []
         self.trailer_dict = PDFDict()
         self.root = Root()
+        self.pages = Pages(self)
 
     def write(self, fd):
         """
@@ -186,7 +200,7 @@ class PDF(object):
         elif isinstance(obj, list):
             fd.write(b'[')
             for elem in obj:
-                self.write_obj(elem)
+                self.write_obj(fd, elem)
             fd.write(b']')
         else:
             raise ValueError("invalid object: %r" % obj)
@@ -196,6 +210,12 @@ class PDF(object):
         root_ref = self.make_ref(self.root)
         self.trailer_dict.values['Root'] = IndirectRef(root_ref)
         self.write_obj(fd, root_ref)
+        pages_ref = self.make_ref(self.pages)
+        self.write_obj(fd, pages_ref)
+
+        for obj in self.xref:
+            if not hasattr(obj, 'position'):
+                self.write_obj(fd, obj)
 
     def write_xref(self, fd):
         "Write the PDF object index"
