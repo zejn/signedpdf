@@ -118,8 +118,9 @@ class Pages(PDFDict):
         self['MediaBox'] = [0, 0, 300, 144]
 
     def add_page(self, page):
+        page['Parent'] = self.pdf.make_ref(self).as_indirect()
         page_ref = self.pdf.make_ref(page)
-        self['Kids'].append(IndirectRef(page_ref))
+        self['Kids'].append(page_ref.as_indirect())
         self['Count'] = len(self['Kids'])
 
 
