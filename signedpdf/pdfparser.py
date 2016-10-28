@@ -30,16 +30,20 @@ def escape_string(s):
     return s
 
 
+class IndirectRef(object):
+    def __init__(self, ref):
+        self.ref = ref
+
 class Ref(object):
     def __init__(self, obj, ref_id, generation=0):
         self.obj = obj
         self.ref_id = ref_id
         self.generation = generation
 
-    def as_ref(self):
+    def as_indirect(self):
         # Chapter 7.3.10 inirect objects
         # return reference
-        return b'%d %d R' % (self.ref_id, self.generation)
+        return IndirectRef(self)
 
     def as_data(self):
         # return as object with
@@ -176,6 +180,8 @@ class PDF(object):
             fd.write(b'%d %d obj\n' % (obj.ref_id, obj.generation))
             self.write_obj(fd, obj.obj)
             fd.write(b'\nendobj\n')
+        elif isinstance(obj, IndirectRef):
+            fd.write(b'%d %d R ' % (obj.ref.ref_id, obj.ref.generation))
         # 7.3.6 Array objects
         elif isinstance(obj, list):
             fd.write(b'[')
@@ -188,6 +194,7 @@ class PDF(object):
     def write_objects(self, fd):
         # XXX FIXME this still needs to be implemented
         root_ref = self.make_ref(self.root)
+        self.trailer_dict.values['Root'] = IndirectRef(root_ref)
         self.write_obj(fd, root_ref)
 
     def write_xref(self, fd):
