@@ -76,6 +76,9 @@ class PDFDict(object):
     def __setitem__(self, key, value):
         self.values[key] = value
 
+class Name(object):
+    def __init__(self, val):
+        self.value = val
 
 class Root(PDFDict):
     # chapter 7.7.2 Document Catalog
@@ -83,7 +86,7 @@ class Root(PDFDict):
         super(Root, self).__init__()
         # Mandatory keys are "Type" (set to "Catalog")
         # and "Pages" (indirect ref)
-        self['Type'] = 'Catalog'
+        self['Type'] = Name('Catalog')
         # FIXME add Pages
 
 
@@ -158,6 +161,11 @@ class PDF(object):
             fd.write(b'(')
             fd.write(obj.encode('utf-8'))
             fd.write(b')')
+        # 7.3.5 Name objects
+        elif isinstance(obj, Name):
+            fd.write(b'/')
+            fd.write(obj.value.encode('utf-8'))
+            fd.write(b' ')
         # 7.3.6 Array objects
         elif isinstance(obj, list):
             fd.write(b'[')
