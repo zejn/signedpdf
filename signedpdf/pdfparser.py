@@ -80,7 +80,7 @@ class PDFDict(object):
 class Root(PDFDict):
     # chapter 7.7.2 Document Catalog
     def __init__(self, **kwargs):
-        super().__init__()
+        super(Root, self).__init__()
         # Mandatory keys are "Type" (set to "Catalog")
         # and "Pages" (indirect ref)
         self['Type'] = 'Catalog'
@@ -90,7 +90,7 @@ class Root(PDFDict):
 class Pages(PDFDict):
     # Chapter 7.7.3 Page tree
     def __init__(self, **kwargs):
-        super().__init__()
+        super(Pages, self).__init__()
         # Mandatory keys are:
         # - "Type", string "Pages"
         # - "Parent", dict
@@ -177,7 +177,7 @@ class PDF(object):
         first_entry = XrefItem(0, 65535)
         # format according to chapter 7.5.4 of PDF spec
         itemfmt = '{:0=10} {:0=5} n '
-        for item in first_entry + self.xref:
+        for item in [first_entry] + self.xref:
             itemline = itemfmt.format(item.position, item.generation)
             itemline = itemline.encode('utf-8') + self.newline
             # each xref entry must be 20 bytes long
