@@ -114,12 +114,18 @@ class PDF(object):
         self.root = Root()
 
     def write(self, fd):
+        """
+        Use this function to write the PDF.
+
+        :param fd: open file handle, where the PDF is to be written
+        """
         self.write_header(fd)
         self.write_objects(fd)
         self.write_xref(fd)
         self.write_trailer(fd)
 
     def write_header(self, fd):
+        "Write PDF header"
         # write PDF header with version
         fd.write(b"%PDF-1.1 " + self.newline)
         # write 6 high-bit bytes, for heuristics to detect this file binary
@@ -128,7 +134,6 @@ class PDF(object):
     # done!
 
     def write_obj(self, fd, obj):
-
         # 7.3.7 Dictionary objects
         if isinstance(obj, dict):
             fd.write(b'<<')
@@ -159,9 +164,11 @@ class PDF(object):
             raise ValueError("invalid object: %r" % obj)
 
     def write_objects(self, fd):
+        # XXX FIXME this still needs to be implemented
         pass
 
     def write_xref(self, fd):
+        "Write the PDF object index"
         self.last_xref_position = fd.tell()
         # indicate start of xref
         fd.write(b'xref' + self.newline)
@@ -185,6 +192,7 @@ class PDF(object):
             fd.write(itemline)
 
     def write_trailer(self, fd):
+        "Write the PDF trailer"
         # Chapter 7.5.5 File trailer
         # start trailer
         fd.write('trailer' + self.newline)
