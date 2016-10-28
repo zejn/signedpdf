@@ -18,5 +18,8 @@ class TestWriting(object):
         d = s.getvalue()
         sys.stderr.write(d)
 
+        with open('testpdf.pdf', 'wb') as out:
+            out.write(s.getvalue())
+
         # assert must fail in order for pytest to print output :)
         assert len(d) == 0

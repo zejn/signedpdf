@@ -50,6 +50,9 @@ class Ref(object):
         # FIXME
         pass
 
+    def __repr__(self):
+        return 'ref_id: %d generation: %d' % (self.ref_id, self.generation)
+
 
 class XRef(object):
     def __init__(self):
@@ -108,9 +111,11 @@ class Pages(PDFDict):
         # - "Kids"
         # - "Count"
         self.pdf = pdf
+        self.pdf.root['Pages'] = self.pdf.make_ref(self).as_indirect()
         self['Type'] = Name('Pages')
         self['Kids'] = []
         self['Count'] = 0
+        self['MediaBox'] = [0, 0, 300, 144]
 
     def add_page(self, page):
         page_ref = self.pdf.make_ref(page)
@@ -129,7 +134,7 @@ class PDF(object):
     newline = b'\n'
 
     def __init__(self):
-        self.xref = []
+        self.xref = OrderedDict()
         self.trailer_dict = PDFDict()
         self.root = Root()
         self.pages = Pages(self)
@@ -146,8 +151,11 @@ class PDF(object):
         self.write_trailer(fd)
 
     def make_ref(self, obj):
-        ref_obj = Ref(obj, len(self.xref) + 1)
-        self.xref.append(ref_obj)
+        try:
+            ref_obj = self.xref[obj]
+        except KeyError:
+            ref_obj = Ref(obj, len(self.xref) + 1)
+            self.xref[obj] = ref_obj
         return ref_obj
 
     def write_header(self, fd):
@@ -201,6 +209,7 @@ class PDF(object):
             fd.write(b'[')
             for elem in obj:
                 self.write_obj(fd, elem)
+                fd.write(b' ')
             fd.write(b']')
         else:
             raise ValueError("invalid object: %r" % obj)
@@ -208,12 +217,13 @@ class PDF(object):
     def write_objects(self, fd):
         # XXX FIXME this still needs to be implemented
         root_ref = self.make_ref(self.root)
-        self.trailer_dict.values['Root'] = IndirectRef(root_ref)
+        self.trailer_dict.values['Root'] = root_ref.as_indirect()
         self.write_obj(fd, root_ref)
         pages_ref = self.make_ref(self.pages)
+
         self.write_obj(fd, pages_ref)
 
-        for obj in self.xref:
+        for obj in self.xref.values():
             if not hasattr(obj, 'position'):
                 self.write_obj(fd, obj)
 
@@ -234,7 +244,7 @@ class PDF(object):
         first_entry = XrefItem(0, 65535)
         # format according to chapter 7.5.4 of PDF spec
         itemfmt = '{:0=10} {:0=5} n '
-        for item in [first_entry] + self.xref:
+        for item in [first_entry] + self.xref.values():
             itemline = itemfmt.format(item.position, item.generation)
             itemline = itemline.encode('utf-8') + self.newline
             # each xref entry must be 20 bytes long
