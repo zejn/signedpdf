@@ -141,7 +141,7 @@ class PDF(object):
                 fd.write(b'/')
                 fd.write(k.encode('utf-8'))
                 fd.write(b' ')
-                self.write_obj(v)
+                self.write_obj(fd, v)
             fd.write(b' >> ')
         elif isinstance(obj, int):
             fd.write(str(obj).encode('utf-8'))
@@ -198,7 +198,7 @@ class PDF(object):
         fd.write('trailer' + self.newline)
         # write trailer dict
         # FIXME
-        fd.write_obj(self.trailer_dict.values)
+        self.write_obj(fd, self.trailer_dict.values)
         # write the location of xref
         fd.write(b'startxref' + self.newline)
         fd.write('{}'.format(self.last_xref_position).encode('utf-8') + self.newline)
