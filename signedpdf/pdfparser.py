@@ -128,6 +128,7 @@ class Page(PDFDict):
     def __init__(self):
         super(Page, self).__init__()
         self['Type'] = Name('Page')
+        self['Resources'] = {}
 
 
 
