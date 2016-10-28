@@ -11,3 +11,9 @@ class TestWriting(object):
         p.write(s)
 
         print(s)
+        import sys
+        d = s.getvalue()
+        sys.stderr.write(d)
+
+        # assert must fail in order for pytest to print output :)
+        assert len(d) == 0

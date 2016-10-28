@@ -135,9 +135,13 @@ class PDF(object):
 
     def write_obj(self, fd, obj):
         # 7.3.7 Dictionary objects
-        if isinstance(obj, dict):
+        if isinstance(obj, (dict, PDFDict)):
+            if isinstance(obj, PDFDict):
+                real_obj = obj.values
+            else:
+                real_obj = obj
             fd.write(b'<<')
-            for k, v in obj.items():
+            for k, v in real_obj.items():
                 fd.write(b'/')
                 fd.write(k.encode('utf-8'))
                 fd.write(b' ')
@@ -198,7 +202,7 @@ class PDF(object):
         fd.write('trailer' + self.newline)
         # write trailer dict
         # FIXME
-        self.write_obj(fd, self.trailer_dict.values)
+        self.write_obj(fd, self.trailer_dict)
         # write the location of xref
         fd.write(b'startxref' + self.newline)
         fd.write('{}'.format(self.last_xref_position).encode('utf-8') + self.newline)
